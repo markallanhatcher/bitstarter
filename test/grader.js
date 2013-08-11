@@ -22,14 +22,10 @@ References:
 */
 
 var fs = require('fs');
-var rest = require('restler');
-var sys = require('sys');
 var program = require('commander');
 var cheerio = require('cheerio');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
-var TEMPFILE = "tempfile.txt";
-
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
@@ -41,7 +37,6 @@ var assertFileExists = function(infile) {
 };
 
 var cheerioHtmlFile = function(htmlfile) {
-    //cheerio parses html according to its DOM structure, returns a pointer 
     return cheerio.load(fs.readFileSync(htmlfile));
 };
 
@@ -51,14 +46,10 @@ var loadChecks = function(checksfile) {
 
 var checkHtmlFile = function(htmlfile, checksfile) {
     $ = cheerioHtmlFile(htmlfile);
-    //$ is some pointer to the DOM in the original html file
     var checks = loadChecks(checksfile).sort();
-    // checks is an array of JSON elements  console.log(checks);
     var out = {};
     for(var ii in checks) {
-	// ii = 0,1....n in json elements; checks [0] = '.navigation'
         var present = $(checks[ii]).length > 0;
-	//$(checks[ii] is a specific html element in the html file; present is a boolean value 
         out[checks[ii]] = present;
     }
     return out;
@@ -70,43 +61,14 @@ var clone = function(fn) {
     return fn.bind({});
 };
 
-var buildfn = function(strFilePath, headers) {
-    var response2console = function(result, response) {
-        if (result instanceof Error) {
-            console.error('Error: ' + util.format(response.message));
-        } else {
-            console.error("Wrote %s", strFilePath);
-            fs.writeFileSync(strFilePath, result);
-           // csv2console(csvfile, headers);
-        }
-    };
-    return response2console;
-};
-
-
 if(require.main == module) {
-    //program.file = html input; program.checks = json check file
     program
-        .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
-	.option('-u, --url <url', 'url to check')
+        .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .parse(process.argv);
-    // checkJson = each JSON element has true or false depending on whether the element contains in html input
-    if (program.url) {
-	console.log("url entered: " + program.url);
-	var response2console = buildfn(TEMPFILE);
-	rest.get(program.url).on('complete', response2console);
-	var checkJson = checkHtmlFile(program.file, program.checks);
-	var outJson = JSON.stringify(checkJson, null, 4);
-    }
-    else {
-	console.log("using html file");
-	var checkJson = checkHtmlFile(program.file, program.checks);
-	var outJson = JSON.stringify(checkJson, null, 4);
-    }
+    var checkJson = checkHtmlFile(program.file, program.checks);
+    var outJson = JSON.stringify(checkJson, null, 4);
     console.log(outJson);
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
-
-// url to check:  http://enigmatic-oasis-6863.herokuapp.com/
